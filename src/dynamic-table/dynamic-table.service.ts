@@ -2,6 +2,7 @@ import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { DynamicTable } from './entities/table.entity';
 import { Repository } from 'typeorm';
+import { EventPattern, Payload } from '@nestjs/microservices';
 
 @Injectable()
 export class DynamicTableService {
@@ -9,6 +10,8 @@ export class DynamicTableService {
     @InjectRepository(DynamicTable)
     private readonly tableRepo: Repository<DynamicTable>,
   ) {}
+
+  
 
   async createTable() {
     const newTable = this.tableRepo.create();

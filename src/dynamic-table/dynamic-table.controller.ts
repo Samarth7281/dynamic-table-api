@@ -9,10 +9,40 @@ import {
   Put,
 } from '@nestjs/common';
 import { DynamicTableService } from './dynamic-table.service';
+import { MessagePattern, Payload } from '@nestjs/microservices';
 
 @Controller('dynamic-table')
 export class DynamicTableController {
   constructor(private readonly dynamicTableService: DynamicTableService) {}
+
+  @MessagePattern('table-events')
+  async handleTableEvents(@Payload() message: any) {
+    const { action,data } = message;
+    const { tableId, rowData } = data || {}
+    switch (action) {
+      case 'createTable':
+        this.dynamicTableService.createTable();
+        console.log('Table created using kafka');
+        break;
+
+      case 'createColumn':
+        const {columnName} = data
+        this.dynamicTableService.addColumn(columnName,tableId);
+        console.log('Column created using kafka');
+        break;
+
+      case 'createRow':
+        this.dynamicTableService.addRow(rowData,tableId);
+        console.log('row created using kafka');
+        break;
+
+      case 'getTable':
+        const table = this.dynamicTableService.getTable(tableId)
+        console.log('Table fetched using kafka')
+        return table
+        break;
+    }
+  }
 
   @Post('create-table')
   async createTable() {
@@ -139,7 +169,11 @@ export class DynamicTableController {
   }
 
   @Put('update-column')
-  async updateColumn(@Body('tableId') tableId: number,@Body('columnId') columnId: number,@Body('columnName') columnName: string){
+  async updateColumn(
+    @Body('tableId') tableId: number,
+    @Body('columnId') columnId: number,
+    @Body('columnName') columnName: string,
+  ) {
     if (!tableId) {
       throw new HttpException('Table ID is required', HttpStatus.BAD_REQUEST);
     }
@@ -147,20 +181,26 @@ export class DynamicTableController {
       throw new HttpException('Column ID is required', HttpStatus.BAD_REQUEST);
     }
     if (!columnName) {
-      throw new HttpException('Column name is required', HttpStatus.BAD_REQUEST);
+      throw new HttpException(
+        'Column name is required',
+        HttpStatus.BAD_REQUEST,
+      );
     }
-    return this.dynamicTableService.updateColumn(columnId,columnName,tableId)
+    return this.dynamicTableService.updateColumn(columnId, columnName, tableId);
   }
 
   @Put('update-row')
-  async updateRow(@Body('tableId') tableId: number,@Body('rowData') rowData: Record<number,any>,@Body('rowIndex') rowIndex:number){
+  async updateRow(
+    @Body('tableId') tableId: number,
+    @Body('rowData') rowData: Record<number, any>,
+    @Body('rowIndex') rowIndex: number,
+  ) {
     if (!tableId) {
       throw new HttpException('Table ID is required', HttpStatus.BAD_REQUEST);
     }
-    if(!rowData){
-      throw new HttpException('Table ID is required', HttpStatus.BAD_REQUEST)
+    if (!rowData) {
+      throw new HttpException('Table ID is required', HttpStatus.BAD_REQUEST);
     }
-    return this.dynamicTableService.updateRow(rowIndex,rowData,tableId)
+    return this.dynamicTableService.updateRow(rowIndex, rowData, tableId);
   }
-
 }
